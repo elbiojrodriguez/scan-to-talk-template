@@ -1,1 +1,1 @@
-# scan-to-talk-template
+
