@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Toque para chamar • DoorVi</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background-color: #f9f9f9;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .content {
+      padding: 20px;
+      text-align: center;
+      max-width: 100%;
+    }
+
+    h1 { font-size: 24px; color: #333; }
+    h2 { font-size: 20px; color: #555; margin-bottom: 20px; }
+
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      background-color: teal;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 80%;
+      max-width: 300px;
+      margin: 10px auto;
+      display: block;
+    }
+
+    button:hover { background-color: #007b7b; }
+
+    /* Janela do vídeo local (pequena e fixa) */
+    #local-video-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 120px;
+      height: 160px;
+      z-index: 100;
+      border: 2px solid white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      overflow: hidden;
+      background: black;
+    }
+
+    #videoPreview {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Vídeo remoto (tela principal) - opcional */
+    #remote-video {
+      width: 100%;
+      max-height: 70vh;
+      background: #222;
+      display: none; /* Inicialmente oculto */
+    }
+
+    @media (max-width: 600px) {
+      #local-video-container {
+        width: 100px;
+        height: 140px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="content">
+    <h1>🟢 Página de chamada</h1>
+    <h2 id="nomeChamado">Aguardando identificação...</h2>
+    <button id="botaoChamar" disabled>Toque para chamar</button>
+
+    <!-- Vídeo remoto (será mostrado quando a chamada iniciar) -->
+    <video id="remote-video" autoplay playsinline></video>
+  </div>
+
+  <!-- Janela do vídeo local (fixa no canto) -->
+  <div id="local-video-container">
+    <video id="videoPreview" autoplay muted playsinline></video>
+  </div>
+
+  <script>
+    // (Seu código JavaScript existente permanece IGUAL)
+    const urlParams = new URLSearchParams(window.location.search);
+    const visitorId = urlParams.get('id');
+    const visitorName = urlParams.get('name');
+    const nomeChamado = document.getElementById('nomeChamado');
+    const botaoChamar = document.getElementById('botaoChamar');
+
+    if (visitorName) {
+      nomeChamado.innerText = `👋 Chamando: ${decodeURIComponent(visitorName)}`;
+    } else if (visitorId) {
+      nomeChamado.innerText = `🔐 Código: ${visitorId}`;
+    }
+
+    const socket = new WebSocket('wss://doorvi-websocket-9c1x.onrender.com');
+
+    socket.addEventListener('open', () => {
+      botaoChamar.disabled = false;
+    });
+
+    botaoChamar.addEventListener('click', () => {
+      if (socket.readyState === WebSocket.OPEN && visitorId) {
+        socket.send(`visitante:${visitorId}`);
+        botaoChamar.innerText = 'Chamando... 📡';
+        botaoChamar.disabled = true;
+      }
+    });
+
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then(stream => {
+        document.getElementById('videoPreview').srcObject = stream;
+      })
+      .catch(err => {
+        console.warn('Erro na câmera:', err);
+      });
+  </script>
+</body>
+</html>
