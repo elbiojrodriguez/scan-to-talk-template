@@ -1,45 +1,41 @@
-const WebSocket = require('ws');
+const WebSocket = require("ws");
 const PORT = process.env.PORT || 10000;
 
 const wss = new WebSocket.Server({ port: PORT });
-console.log(`🚀 Servidor WebSocket rodando na porta ${PORT}`);
+console.log(`🚀 Servidor WebSocket ativo na porta ${PORT}`);
 
-const donos = {}; // Mapeia IDs de dono → conexão WebSocket
+const donos = {}; // ID do dono → conexão WebSocket
 
-wss.on('connection', (ws) => {
-  console.log('🟢 Nova conexão recebida');
+wss.on("connection", (ws) => {
+  console.log("🟢 Nova conexão WebSocket");
 
-  ws.on('message', (msg) => {
+  ws.on("message", (msg) => {
     const texto = msg.toString();
-    console.log(`📨 Mensagem recebida: ${texto}`);
+    console.log(`📨 Mensagem: ${texto}`);
 
-    const [tipo, id] = texto.split(':');
+    const [tipo, id] = texto.split(":");
 
-    if (tipo === 'owner') {
+    if (tipo === "owner") {
       donos[id] = ws;
       console.log(`✅ Dono registrado com ID: ${id}`);
     }
 
-    if (tipo === 'visitante') {
-      console.log(`🔔 Visitante chamou com ID: ${id}`);
+    if (tipo === "visitante") {
       const donoWs = donos[id];
-
       if (donoWs && donoWs.readyState === WebSocket.OPEN) {
         donoWs.send(`visitante:${id}`);
-        console.log(`📤 Mensagem enviada ao dono: visitante:${id}`);
+        console.log(`📤 Enviado para dono: visitante:${id}`);
       } else {
-        console.log(`❌ Dono com ID ${id} não está conectado ou não foi registrado`);
+        console.log(`❌ Dono com ID ${id} não está conectado`);
       }
     }
   });
 
-  ws.on('close', () => {
-    // Remove dono da lista se ele se desconectar
+  ws.on("close", () => {
     for (const id in donos) {
       if (donos[id] === ws) {
         delete donos[id];
         console.log(`🔴 Dono desconectado: ${id}`);
-        break;
       }
     }
   });
