@@ -3,84 +3,75 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Toque para chamar • DoorVi</title>
+  <title>📡 Lemur Link — Chamada</title>
   <style>
     body {
       font-family: sans-serif;
+      background-color: #f3fdfb;
       text-align: center;
-      margin-top: 60px;
-      background-color: #f9f9f9;
+      margin-top: 50px;
     }
 
-    h1 { font-size: 24px; color: #333; }
-    h2 { font-size: 20px; color: #555; }
-    p  { font-size: 16px; color: #444; margin-top: 8px; }
-
+    h1 { font-size: 22px; color: #116d6e; }
+    h2 { font-size: 18px; color: #333; margin-top: 12px; }
     button {
       margin-top: 20px;
       padding: 12px 24px;
       font-size: 16px;
-      background-color: teal;
+      background-color: #009688;
       color: white;
       border: none;
       border-radius: 6px;
       cursor: pointer;
     }
-
-    button:hover { background-color: #007b7b; }
-
+    button:hover {
+      background-color: #007b7b;
+    }
     video {
       margin-top: 30px;
       width: 320px;
       border: 2px solid #ccc;
-      border-radius: 8px;
-      box-shadow: 0 0 12px rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
     }
   </style>
 </head>
 <body>
-  <h1>🟢 Página de chamada</h1>
-  <h2 id="nomeChamado">Aguardando identificação...</h2>
+  <h1>🐾 Página de chamada do Lemur</h1>
+  <h2 id="nomeVisitante">🔐 Código indefinido</h2>
   <button id="botaoChamar" disabled>Toque para chamar</button>
-
   <video id="videoPreview" autoplay muted playsinline></video>
 
-  <!-- Conexão WebSocket básica -->
   <script>
     const urlParams = new URLSearchParams(window.location.search);
     const visitorId = urlParams.get('id');
-    const nomeChamado = document.getElementById('nomeChamado');
+    const visitorName = urlParams.get('name');
+    const nomeVisitante = document.getElementById('nomeVisitante');
     const botaoChamar = document.getElementById('botaoChamar');
 
-    // Exibe nome simplificado ou ID
     if (visitorId) {
-      nomeChamado.innerText = `🔐 Código: ${visitorId}`;
-    } else {
-      nomeChamado.innerText = '❌ Código não encontrado';
+      nomeVisitante.innerText = `👤 Visitante: ${decodeURIComponent(visitorName || 'Anônimo')}`;
     }
 
-    // Conecta ao servidor WebSocket
-    const socket = new WebSocket('wss://doorvi-websocket-9c1x.onrender.com');
+    const socket = new WebSocket("wss://doorvi-websocket-9c1x.onrender.com");
 
-    socket.addEventListener('open', () => {
+    socket.addEventListener("open", () => {
       botaoChamar.disabled = false;
     });
 
-    botaoChamar.addEventListener('click', () => {
+    botaoChamar.addEventListener("click", () => {
       if (socket.readyState === WebSocket.OPEN && visitorId) {
         socket.send(`visitante:${visitorId}`);
-        botaoChamar.innerText = 'Chamando... 📡';
+        botaoChamar.innerText = "Chamando... 📡";
         botaoChamar.disabled = true;
       }
     });
 
-    // Visualização de vídeo local
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    navigator.mediaDevices.getUserMedia({ video: true })
       .then(stream => {
-        document.getElementById('videoPreview').srcObject = stream;
+        document.getElementById("videoPreview").srcObject = stream;
       })
-      .catch(err => {
-        console.warn('🎥 Falha ao acessar câmera/microfone:', err);
+      .catch(error => {
+        console.warn("Erro ao acessar câmera:", error);
       });
   </script>
 </body>
