@@ -11,7 +11,7 @@ wss.on("connection", (ws) => {
 
   ws.on("message", (msg) => {
     const texto = msg.toString();
-    console.log(`📨 Mensagem: ${texto}`);
+    console.log(`📨 Mensagem recebida: ${texto}`);
 
     const [tipo, id] = texto.split(":");
 
