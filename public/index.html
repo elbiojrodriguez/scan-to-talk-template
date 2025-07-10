@@ -11,8 +11,15 @@
       text-align: center;
       margin-top: 50px;
     }
-    h1 { font-size: 22px; color: #116d6e; }
-    h2 { font-size: 18px; color: #333; margin-top: 12px; }
+    h1 {
+      font-size: 22px;
+      color: #116d6e;
+    }
+    h2 {
+      font-size: 18px;
+      color: #333;
+      margin-top: 12px;
+    }
     button {
       margin-top: 20px;
       padding: 12px 24px;
@@ -23,7 +30,9 @@
       border-radius: 6px;
       cursor: pointer;
     }
-    button:hover { background-color: #007b7b; }
+    button:hover {
+      background-color: #007b7b;
+    }
     video {
       margin-top: 30px;
       width: 320px;
@@ -42,8 +51,10 @@
     const urlParams = new URLSearchParams(window.location.search);
     const visitorId = urlParams.get("id");
     const visitorName = urlParams.get("name");
+
     const nomeVisitante = document.getElementById("nomeVisitante");
     const botaoChamar = document.getElementById("botaoChamar");
+    const videoPreview = document.getElementById("videoPreview");
 
     if (visitorId) {
       nomeVisitante.innerText = `👤 Visitante: ${decodeURIComponent(visitorName || "Anônimo")}`;
@@ -63,9 +74,32 @@
       }
     });
 
-    navigator.mediaDevices.getUserMedia({ video: true })
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       .then(stream => {
-        document.getElementById("videoPreview").srcObject = stream;
+        videoPreview.srcObject = stream;
+
+        const peerConnection = new RTCPeerConnection();
+
+        stream.getTracks().forEach(track => {
+          peerConnection.addTrack(track, stream);
+        });
+
+        peerConnection.createOffer()
+          .then(offer => peerConnection.setLocalDescription(offer))
+          .then(() => {
+            console.log("📨 Offer local criada:");
+            console.log(peerConnection.localDescription.sdp);
+
+            // Envia a offer via WebSocket (ainda não implementado no servidor)
+            if (socket.readyState === WebSocket.OPEN && visitorId) {
+              const offerMensagem = `offer:${visitorId}:${btoa(peerConnection.localDescription.sdp)}`;
+              socket.send(offerMensagem);
+              console.log("📤 Offer enviada ao dono via WebSocket");
+            }
+          })
+          .catch(error => {
+            console.error("❌ Erro ao criar offer:", error);
+          });
       })
       .catch(error => {
         console.warn("Erro ao acessar câmera:", error);
