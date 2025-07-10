@@ -1,45 +1,56 @@
-const WebSocket = require('ws');
-const PORT = process.env.PORT || 10000;
+const urlParams = new URLSearchParams(window.location.search);
+const visitorId = urlParams.get("id");
+const visitorName = urlParams.get("name");
 
-const wss = new WebSocket.Server({ port: PORT });
-console.log(`🚀 Servidor WebSocket rodando na porta ${PORT}`);
+const nomeVisitante = document.getElementById("nomeVisitante");
+const botaoChamar = document.getElementById("botaoChamar");
+const videoPreview = document.getElementById("videoPreview");
 
-const donos = {}; // Mapeia IDs de dono → conexão WebSocket
+if (visitorId) {
+  nomeVisitante.innerText = `👤 Visitante: ${decodeURIComponent(visitorName || "Anônimo")}`;
+}
 
-wss.on('connection', (ws) => {
-  console.log('🟢 Nova conexão recebida');
+const socket = new WebSocket("wss://lemur-websocket.onrender.com");
 
-  ws.on('message', (msg) => {
-    const texto = msg.toString();
-    console.log(`📨 Mensagem recebida: ${texto}`);
-
-    const [tipo, id] = texto.split(':');
-
-    if (tipo === 'owner') {
-      donos[id] = ws;
-      console.log(`✅ Dono registrado com ID: ${id}`);
-    }
-
-    if (tipo === 'visitante') {
-      console.log(`🔔 Visitante chamou com ID: ${id}`);
-      const donoWs = donos[id];
-
-      if (donoWs && donoWs.readyState === WebSocket.OPEN) {
-        donoWs.send(`visitante:${id}`);
-        console.log(`📤 Mensagem enviada ao dono: visitante:${id}`);
-      } else {
-        console.log(`❌ Dono com ID ${id} não está conectado ou não foi registrado`);
-      }
-    }
-  });
-
-  ws.on('close', () => {
-    for (const id in donos) {
-      if (donos[id] === ws) {
-        delete donos[id];
-        console.log(`🔴 Dono desconectado: ${id}`);
-        break;
-      }
-    }
-  });
+socket.addEventListener("open", () => {
+  botaoChamar.disabled = false;
 });
+
+botaoChamar.addEventListener("click", () => {
+  if (socket.readyState === WebSocket.OPEN && visitorId) {
+    socket.send(`visitante:${visitorId}`);
+    botaoChamar.innerText = "Chamando... 📡";
+    botaoChamar.disabled = true;
+  }
+});
+
+navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+  .then(stream => {
+    videoPreview.srcObject = stream;
+
+    const peerConnection = new RTCPeerConnection();
+
+    stream.getTracks().forEach(track => {
+      peerConnection.addTrack(track, stream);
+    });
+
+    peerConnection.createOffer()
+      .then(offer => peerConnection.setLocalDescription(offer))
+      .then(() => {
+        console.log("📨 Offer local criada:");
+        console.log(peerConnection.localDescription.sdp);
+
+        if (socket.readyState === WebSocket.OPEN && visitorId) {
+          const sdpEncoded = btoa(peerConnection.localDescription.sdp);
+          const offerMensagem = `offer:${visitorId}:${sdpEncoded}`;
+          socket.send(offerMensagem);
+          console.log("📤 Offer enviada ao dono via WebSocket");
+        }
+      })
+      .catch(error => {
+        console.error("❌ Erro ao criar offer:", error);
+      });
+  })
+  .catch(error => {
+    console.warn("Erro ao acessar câmera:", error);
+  });
