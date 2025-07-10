@@ -62,6 +62,8 @@
 
     const socket = new WebSocket("wss://lemur-websocket.onrender.com");
 
+    let peerConnection;
+
     socket.addEventListener("open", () => {
       botaoChamar.disabled = false;
     });
@@ -78,7 +80,7 @@
       .then(stream => {
         videoPreview.srcObject = stream;
 
-        const peerConnection = new RTCPeerConnection();
+        peerConnection = new RTCPeerConnection();
 
         stream.getTracks().forEach(track => {
           peerConnection.addTrack(track, stream);
@@ -90,7 +92,6 @@
             console.log("📨 Offer local criada:");
             console.log(peerConnection.localDescription.sdp);
 
-            // Envia a offer via WebSocket (ainda não implementado no servidor)
             if (socket.readyState === WebSocket.OPEN && visitorId) {
               const offerMensagem = `offer:${visitorId}:${btoa(peerConnection.localDescription.sdp)}`;
               socket.send(offerMensagem);
@@ -104,6 +105,26 @@
       .catch(error => {
         console.warn("Erro ao acessar câmera:", error);
       });
+
+    // ✅ Recebe a answer e aplica na conexão
+    socket.addEventListener("message", event => {
+      const mensagem = event.data;
+
+      if (mensagem.startsWith(`answer:${visitorId}:`)) {
+        const sdpEncoded = mensagem.split(":").slice(2).join(":");
+        const sdp = atob(sdpEncoded);
+
+        peerConnection.setRemoteDescription(
+          new RTCSessionDescription({ type: "answer", sdp })
+        )
+        .then(() => {
+          console.log("✅ Answer aplicada — canal WebRTC completo!");
+        })
+        .catch(error => {
+          console.error("❌ Erro ao aplicar answer:", error);
+        });
+      }
+    });
   </script>
 </body>
 </html>
