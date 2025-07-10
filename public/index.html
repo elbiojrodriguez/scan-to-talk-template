@@ -36,7 +36,7 @@
   <h1>🐾 Oi, Lemur</h1>
   <p id="info">Carregando informações…</p>
   <video id="cam" autoplay muted playsinline></video>
-  <button id="botao">Chamar Lelê 🛎️</button>
+  <button id="botao" disabled>Chamar Lelê 🛎️</button>
 
   <script>
     const params = new URLSearchParams(window.location.search);
@@ -44,28 +44,36 @@
     const donoNome = params.get("name") || "Dono";
     const visitanteId = crypto.randomUUID();
 
+    const botao = document.getElementById("botao");
+    const video = document.getElementById("cam");
+    let socketConectado = false;
+
     const socket = new WebSocket("wss://lemur-websocket.onrender.com");
     socket.onopen = () => {
       console.log("✅ WebSocket conectado");
+      socketConectado = true;
+      liberarBotao();
     };
 
-    const video = document.getElementById("cam");
     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       .then(stream => {
         video.srcObject = stream;
         document.getElementById("info").textContent = `Conectado com: ${donoNome} (${donoId})`;
+        liberarBotao();
       })
       .catch(err => {
         document.getElementById("info").textContent = "❌ Erro ao acessar a câmera: " + err.message;
       });
 
-    document.getElementById("botao").onclick = () => {
-      if (!visitanteId || visitanteId.length < 10) {
-        alert("❌ Falha ao gerar crachá do visitante. Atualize a página.");
-        return;
+    function liberarBotao() {
+      if (socketConectado && visitanteId) {
+        botao.disabled = false;
       }
-      if (!socket || socket.readyState !== WebSocket.OPEN) {
-        alert("❌ WebSocket não está pronto. Tente novamente em instantes.");
+    }
+
+    botao.onclick = () => {
+      if (!visitanteId || visitanteId.length < 10 || !socketConectado) {
+        alert("❌ Crachá inválido ou conexão incompleta.");
         return;
       }
 
@@ -73,8 +81,8 @@
       console.log("📡 Enviando para o dono:", mensagem);
       socket.send(mensagem);
 
-      document.getElementById("botao").textContent = "Chamado enviado ✔️";
-      document.getElementById("botao").disabled = true;
+      botao.textContent = "Chamado enviado ✔️";
+      botao.disabled = true;
     };
   </script>
 </body>
