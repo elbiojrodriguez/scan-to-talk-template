@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Conectar com Lemur</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       background-color: #fefae0;
@@ -45,7 +46,7 @@
 
     const socket = new WebSocket("wss://lemur-websocket.onrender.com");
     socket.onopen = () => {
-      console.log("WebSocket conectado");
+      console.log("✅ WebSocket conectado");
     };
 
     const video = document.getElementById("cam");
@@ -59,7 +60,6 @@
       });
 
     document.getElementById("botao").onclick = () => {
-      // 🛡️ Validação do ID
       if (!visitanteId || visitanteId.length < 10) {
         alert("❌ Falha ao gerar crachá do visitante. Atualize a página.");
         return;
@@ -70,7 +70,7 @@
       }
 
       const mensagem = `visitante:${donoId}:${visitanteId}`;
-      console.log("📡 Enviando:", mensagem);
+      console.log("📡 Enviando para o dono:", mensagem);
       socket.send(mensagem);
 
       document.getElementById("botao").textContent = "Chamado enviado ✔️";
