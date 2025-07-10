@@ -1,77 +1,75 @@
-public/index.html
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>📡 Lemur Link — Chamada</title>
+  <title>Conectar com Lemur</title>
   <style>
     body {
+      background-color: #fefae0;
       font-family: sans-serif;
-      background-color: #f3fdfb;
       text-align: center;
-      margin-top: 50px;
+      padding: 30px;
     }
-    h1 { font-size: 22px; color: #116d6e; }
-    h2 { font-size: 18px; color: #333; margin-top: 12px; }
+    h1 {
+      color: #6a994e;
+    }
     button {
-      margin-top: 20px;
-      padding: 12px 24px;
-      font-size: 16px;
-      background-color: #009688;
-      color: white;
+      font-size: 20px;
+      padding: 14px 24px;
+      border-radius: 12px;
       border: none;
-      border-radius: 6px;
+      background-color: #6a994e;
+      color: white;
       cursor: pointer;
+      margin-top: 24px;
     }
-    button:hover { background-color: #007b7b; }
     video {
-      margin-top: 30px;
+      margin-top: 20px;
       width: 320px;
-      border: 2px solid #ccc;
-      border-radius: 10px;
+      border: 2px solid #6a994e;
+      border-radius: 12px;
     }
   </style>
 </head>
 <body>
-  <h1>🐾 Página de chamada do Lemur</h1>
-  <h2 id="nomeVisitante">🔐 Código indefinido</h2>
-  <button id="botaoChamar" disabled>Toque para chamar</button>
-  <video id="videoPreview" autoplay muted playsinline></video>
+  <h1>🐾 Oi, Lemur</h1>
+  <p id="info">Carregando informações…</p>
+  <video id="cam" autoplay muted playsinline></video>
+  <button id="botao">Chamar Lelê 🛎️</button>
 
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const visitorId = urlParams.get("id");
-    const visitorName = urlParams.get("name");
-    const nomeVisitante = document.getElementById("nomeVisitante");
-    const botaoChamar = document.getElementById("botaoChamar");
+    // 🔎 Extrai parâmetros da URL
+    const params = new URLSearchParams(window.location.search);
+    const donoId = params.get("id") || "sem-id";
+    const donoNome = params.get("name") || "Dono";
 
-    if (visitorId) {
-      nomeVisitante.innerText = `👤 Visitante: ${decodeURIComponent(visitorName || "Anônimo")}`;
-    }
+    // 🆔 Gera um UUID simples pro visitante
+    const visitanteId = crypto.randomUUID();
 
+    // 🛰️ Conecta no WebSocket
     const socket = new WebSocket("wss://lemur-websocket.onrender.com");
+    socket.onopen = () => {
+      console.log("WebSocket conectado");
+    };
 
-    socket.addEventListener("open", () => {
-      botaoChamar.disabled = false;
-    });
-
-    botaoChamar.addEventListener("click", () => {
-      if (socket.readyState === WebSocket.OPEN && visitorId) {
-        socket.send(`visitante:${visitorId}`);
-        botaoChamar.innerText = "Chamando... 📡";
-        botaoChamar.disabled = true;
-      }
-    });
-
-    navigator.mediaDevices.getUserMedia({ video: true })
+    // 📸 Pede permissão de câmera
+    const video = document.getElementById("cam");
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       .then(stream => {
-        document.getElementById("videoPreview").srcObject = stream;
+        video.srcObject = stream;
+        document.getElementById("info").textContent = `Conectado com: ${donoNome} (${donoId})`;
       })
-      .catch(error => {
-        console.warn("Erro ao acessar câmera:", error);
+      .catch(err => {
+        document.getElementById("info").textContent = "❌ Erro ao acessar a câmera: " + err.message;
       });
+
+    // 🎯 Envia IDs ao clicar no botão
+    document.getElementById("botao").onclick = () => {
+      const mensagem = `visitante:${donoId}:${visitanteId}`;
+      socket.send(mensagem);
+      document.getElementById("botao").textContent = "Chamado enviado ✔️";
+      document.getElementById("botao").disabled = true;
+    };
   </script>
 </body>
 </html>
