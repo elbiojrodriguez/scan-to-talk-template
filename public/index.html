@@ -38,21 +38,16 @@
   <button id="botao">Chamar Lelê 🛎️</button>
 
   <script>
-    // 🔎 Extrai parâmetros da URL
     const params = new URLSearchParams(window.location.search);
     const donoId = params.get("id") || "sem-id";
     const donoNome = params.get("name") || "Dono";
-
-    // 🆔 Gera um UUID simples pro visitante
     const visitanteId = crypto.randomUUID();
 
-    // 🛰️ Conecta no WebSocket
     const socket = new WebSocket("wss://lemur-websocket.onrender.com");
     socket.onopen = () => {
       console.log("WebSocket conectado");
     };
 
-    // 📸 Pede permissão de câmera
     const video = document.getElementById("cam");
     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       .then(stream => {
@@ -63,10 +58,21 @@
         document.getElementById("info").textContent = "❌ Erro ao acessar a câmera: " + err.message;
       });
 
-    // 🎯 Envia IDs ao clicar no botão
     document.getElementById("botao").onclick = () => {
+      // 🛡️ Validação do ID
+      if (!visitanteId || visitanteId.length < 10) {
+        alert("❌ Falha ao gerar crachá do visitante. Atualize a página.");
+        return;
+      }
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        alert("❌ WebSocket não está pronto. Tente novamente em instantes.");
+        return;
+      }
+
       const mensagem = `visitante:${donoId}:${visitanteId}`;
+      console.log("📡 Enviando:", mensagem);
       socket.send(mensagem);
+
       document.getElementById("botao").textContent = "Chamado enviado ✔️";
       document.getElementById("botao").disabled = true;
     };
