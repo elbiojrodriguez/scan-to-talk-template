@@ -1,52 +1,44 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Câmera do Visitante</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { font-family: sans-serif; text-align: center; padding: 24px }
-    #video { width: 100%; max-width: 320px; border: 2px solid #444 }
-    #status { margin-top: 16px; color: #555 }
-  </style>
+  <meta charset="utf-8">
+  <title>Visitante Lemur</title>
 </head>
-<body>
-  <h2>🧑‍💻 Câmera do Visitante</h2>
-  <video id="video" autoplay></video>
-  <p id="status">Aguardando...</p>
+<body style="background:black; color:white; text-align:center;">
+  <h2>🎥 Transmitindo para o Lemur...</h2>
+  <video id="camera" autoplay muted playsinline></video>
+  <canvas id="canvas" style="display:none;"></canvas>
 
   <script>
-    const id = new URLSearchParams(window.location.search).get("id");
-    const statusEl = document.getElementById("status");
-
-    const video = document.getElementById("video");
-    const canvas = document.createElement("canvas");
-
+    const id = new URLSearchParams(location.search).get("id");
     const socket = new WebSocket("wss://lemur-websocket.onrender.com");
+    const video = document.getElementById("camera");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
 
-    socket.onopen = () => {
-      statusEl.textContent = `🔗 Conectado como visitante: ${id}`;
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+      .then(stream => {
+        video.srcObject = stream;
 
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
-          video.srcObject = stream;
-          setInterval(() => {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext("2d").drawImage(video, 0, 0);
-            const imgBase64 = canvas.toDataURL("image/jpeg");
-
-            socket.send(JSON.stringify({
-              tipo: "camera",
-              id,
-              conteudo: imgBase64
-            }));
-          }, 3000); // Envia uma imagem a cada 3 segundos
-        })
-        .catch(() => {
-          statusEl.textContent = "❌ Não foi possível acessar a câmera.";
+        // Envia crachá inicial
+        socket.addEventListener("open", () => {
+          console.log("🔗 Conectado ao WebSocket");
+          socket.send(JSON.stringify({ tipo: "visitante", id }));
         });
-    };
+
+        // Transmite imagem contínua
+        setInterval(() => {
+          canvas.width = 160;
+          canvas.height = 120;
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          const base64 = canvas.toDataURL("image/jpeg", 0.6); // Compressão leve
+          socket.send(JSON.stringify({ tipo: "camera", id, conteudo: base64 }));
+        }, 100); // 10 fps
+      })
+      .catch(err => {
+        document.body.innerText = "❌ Erro na câmera: " + err.message;
+      });
   </script>
 </body>
 </html>
