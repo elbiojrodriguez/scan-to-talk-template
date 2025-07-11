@@ -23,30 +23,32 @@
 </head>
 <body>
   <h1>🆔 Crachá Lemur</h1>
-  <p id="status">Aguardando…</p>
+  <p id="status">Aguardando conexão…</p>
 
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const visitanteId = urlParams.get("id");
-
+    const id = new URLSearchParams(window.location.search).get("id");
     const statusEl = document.getElementById("status");
 
-    if (!visitanteId) {
+    if (!id) {
       statusEl.textContent = "❌ ID não encontrado na URL.";
     } else {
       const socket = new WebSocket("wss://lemur-websocket.onrender.com");
 
       socket.onopen = () => {
         setTimeout(() => {
-          const mensagem = `visitante:${visitanteId}`;
-          socket.send(mensagem);
-          statusEl.textContent = `✅ Crachá enviado: ${visitanteId}`;
+          const mensagem = {
+            tipo: "visitante",
+            id: id,
+            conteudo: "cracha solicitado"
+          };
+          socket.send(JSON.stringify(mensagem));
+          statusEl.textContent = `✅ Crachá enviado: ${id}`;
           console.log("📡 Enviado:", mensagem);
-        }, 1500); // 🔄 Aguarda 1.5s para garantir que o app esteja ouvindo
+        }, 1000); // Pequeno atraso para garantir que dono esteja escutando
       };
 
       socket.onerror = () => {
-        statusEl.textContent = "❌ Falha na conexão.";
+        statusEl.textContent = "❌ Falha ao conectar ao servidor.";
       };
     }
   </script>
