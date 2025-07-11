@@ -2,27 +2,28 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Cracha Lemur</title>
+  <title>Crachá Lemur</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      background-color: #fefae0;
+      background-color: #fff;
       font-family: sans-serif;
       text-align: center;
-      padding: 30px;
+      padding: 32px;
     }
     h1 {
-      color: #6a994e;
+      color: #333;
+      margin-bottom: 24px;
     }
     #status {
       font-size: 18px;
-      margin-top: 16px;
+      color: #555;
     }
   </style>
 </head>
 <body>
-  <h1>🐾 Visitante identificado</h1>
-  <p id="status">🕒 Enviando crachá…</p>
+  <h1>🆔 Crachá Lemur</h1>
+  <p id="status">Gerando visitante…</p>
 
   <script>
     const visitanteId = crypto.randomUUID();
@@ -33,12 +34,12 @@
     socket.onopen = () => {
       const mensagem = `visitante:${visitanteId}`;
       socket.send(mensagem);
-      console.log("📡 Mensagem enviada:", mensagem);
       statusEl.textContent = `✅ Crachá enviado: ${visitanteId}`;
+      console.log("📡 Enviado:", mensagem);
     };
 
     socket.onerror = () => {
-      statusEl.textContent = "❌ Falha na conexão WebSocket.";
+      statusEl.textContent = "❌ Falha na conexão.";
     };
   </script>
 </body>
