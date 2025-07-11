@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Conectar com Lemur</title>
+  <title>Cracha Lemur</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
@@ -21,23 +21,20 @@
   </style>
 </head>
 <body>
-  <h1>🐾 Bem-vindo ao Lemur</h1>
-  <p id="status">🕒 Gerando crachá do visitante…</p>
+  <h1>🐾 Visitante identificado</h1>
+  <p id="status">🕒 Enviando crachá…</p>
 
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const donoId = params.get("id") || "sem-id";
-    const donoNome = params.get("name") || "Dono";
     const visitanteId = crypto.randomUUID();
     const statusEl = document.getElementById("status");
 
     const socket = new WebSocket("wss://lemur-websocket.onrender.com");
 
     socket.onopen = () => {
-      const mensagem = `visitante:${donoId}:${visitanteId}`;
+      const mensagem = `visitante:${visitanteId}`;
       socket.send(mensagem);
-      console.log("📡 Crachá enviado:", mensagem);
-      statusEl.textContent = `✅ Conectado com ${donoNome} — crachá enviado!`;
+      console.log("📡 Mensagem enviada:", mensagem);
+      statusEl.textContent = `✅ Crachá enviado: ${visitanteId}`;
     };
 
     socket.onerror = () => {
