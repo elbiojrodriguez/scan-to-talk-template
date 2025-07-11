@@ -3,16 +3,41 @@
 <head>
   <meta charset="utf-8">
   <title>Visitante Lemur</title>
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      overflow: hidden;
+      font-family: sans-serif;
+      color: white;
+    }
+    #preview {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      width: 120px;
+      height: 90px;
+      border: 2px solid white;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+    h2 {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      font-size: 18px;
+    }
+  </style>
 </head>
-<body style="background:black; color:white; text-align:center;">
-  <h2>🎥 Transmitindo para o Lemur...</h2>
-  <video id="camera" autoplay muted playsinline></video>
+<body>
+  <h2>🎥 Transmitindo...</h2>
+  <video id="preview" autoplay muted playsinline></video>
   <canvas id="canvas" style="display:none;"></canvas>
 
   <script>
     const id = new URLSearchParams(location.search).get("id");
     const socket = new WebSocket("wss://lemur-websocket.onrender.com");
-    const video = document.getElementById("camera");
+    const video = document.getElementById("preview");
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
 
@@ -20,21 +45,20 @@
       .then(stream => {
         video.srcObject = stream;
 
-        // Envia crachá inicial
         socket.addEventListener("open", () => {
-          console.log("🔗 Conectado ao WebSocket");
           socket.send(JSON.stringify({ tipo: "visitante", id }));
+          console.log("🔗 Conectado ao WebSocket");
         });
 
-        // Transmite imagem contínua
+        // Transmite frames a 24fps (≈ 41ms)
         setInterval(() => {
           canvas.width = 160;
           canvas.height = 120;
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-          const base64 = canvas.toDataURL("image/jpeg", 0.6); // Compressão leve
+          const base64 = canvas.toDataURL("image/jpeg", 0.6);
           socket.send(JSON.stringify({ tipo: "camera", id, conteudo: base64 }));
-        }, 100); // 10 fps
+        }, 41); // 24fps
       })
       .catch(err => {
         document.body.innerText = "❌ Erro na câmera: " + err.message;
