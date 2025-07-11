@@ -30,13 +30,28 @@
       border: 2px solid #6a994e;
       border-radius: 12px;
     }
+    #painelAutorizacao {
+      display: block;
+    }
+    #painelPrincipal {
+      display: none;
+    }
   </style>
 </head>
 <body>
-  <h1>🐾 Oi, Lemur</h1>
-  <p id="info">Carregando informações…</p>
-  <video id="cam" autoplay muted playsinline></video>
-  <button id="botao" disabled>Chamar Lelê 🛎️</button>
+  <div id="painelAutorizacao">
+    <h1>🔒 Autorização necessária</h1>
+    <p>Acesse a câmera e o microfone para continuar:</p>
+    <button id="autorizar">Permitir acesso 🎤📷</button>
+    <p id="erroAutorizacao" style="color: red;"></p>
+  </div>
+
+  <div id="painelPrincipal">
+    <h1>🐾 Oi, Lemur</h1>
+    <p id="info">Carregando informações…</p>
+    <video id="cam" autoplay muted playsinline></video>
+    <button id="botao" disabled>Chamar Lelê 🛎️</button>
+  </div>
 
   <script>
     const params = new URLSearchParams(window.location.search);
@@ -44,46 +59,51 @@
     const donoNome = params.get("name") || "Dono";
     const visitanteId = crypto.randomUUID();
 
-    const botao = document.getElementById("botao");
+    const autorizarBtn = document.getElementById("autorizar");
+    const erroAutorizacao = document.getElementById("erroAutorizacao");
+    const painelAutorizacao = document.getElementById("painelAutorizacao");
+    const painelPrincipal = document.getElementById("painelPrincipal");
     const video = document.getElementById("cam");
+    const botao = document.getElementById("botao");
     let socketConectado = false;
 
-    const socket = new WebSocket("wss://lemur-websocket.onrender.com");
-    socket.onopen = () => {
-      console.log("✅ WebSocket conectado");
-      socketConectado = true;
-      liberarBotao();
+    autorizarBtn.onclick = () => {
+      navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        .then(stream => {
+          video.srcObject = stream;
+          painelAutorizacao.style.display = "none";
+          painelPrincipal.style.display = "block";
+          iniciarConexao();
+        })
+        .catch(err => {
+          erroAutorizacao.textContent = "❌ Erro: " + err.message;
+        });
     };
 
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      .then(stream => {
-        video.srcObject = stream;
+    function iniciarConexao() {
+      const socket = new WebSocket("wss://lemur-websocket.onrender.com");
+
+      socket.onopen = () => {
+        console.log("✅ WebSocket conectado");
+        socketConectado = true;
         document.getElementById("info").textContent = `Conectado com: ${donoNome} (${donoId})`;
-        liberarBotao();
-      })
-      .catch(err => {
-        document.getElementById("info").textContent = "❌ Erro ao acessar a câmera: " + err.message;
-      });
-
-    function liberarBotao() {
-      if (socketConectado && visitanteId) {
         botao.disabled = false;
-      }
+      };
+
+      botao.onclick = () => {
+        if (!visitanteId || visitanteId.length < 10 || !socketConectado) {
+          alert("❌ Crachá inválido ou conexão incompleta.");
+          return;
+        }
+
+        const mensagem = `visitante:${donoId}:${visitanteId}`;
+        console.log("📡 Enviando para o dono:", mensagem);
+        socket.send(mensagem);
+
+        botao.textContent = "Chamado enviado ✔️";
+        botao.disabled = true;
+      };
     }
-
-    botao.onclick = () => {
-      if (!visitanteId || visitanteId.length < 10 || !socketConectado) {
-        alert("❌ Crachá inválido ou conexão incompleta.");
-        return;
-      }
-
-      const mensagem = `visitante:${donoId}:${visitanteId}`;
-      console.log("📡 Enviando para o dono:", mensagem);
-      socket.send(mensagem);
-
-      botao.textContent = "Chamado enviado ✔️";
-      botao.disabled = true;
-    };
   </script>
 </body>
 </html>
